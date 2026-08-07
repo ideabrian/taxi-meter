@@ -4,7 +4,11 @@ A project billing timer for Claude Code. Tracks elapsed session time and running
 
 ## What it does
 
-Every time you start a Claude Code session, a timer starts. The statusline shows: `~/my-project | 🚕 12m30s $31.25 ($150/hr)`
+Every time you start a Claude Code session, a timer starts. 
+
+The statusline shows: 
+
+`~/my-project | 🚕 12m30s $31.25 ($150/hr)`
 
 Timer resets when you resume a session. Each project has its own timer — other projects are unaffected.
 
