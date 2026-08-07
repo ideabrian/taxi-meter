@@ -1,0 +1,699 @@
+<title>Taxi Meter — Install Flow</title>
+<style>
+  :root {
+    --ground: #0c1117;
+    --surface: #161b22;
+    --raised: #1c2333;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #6b7280;
+    --amber: #f59e0b;
+    --amber-dim: rgba(245, 158, 11, 0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239, 68, 68, 0.10);
+    --green: #10b981;
+    --green-dim: rgba(16, 185, 129, 0.10);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59, 130, 246, 0.10);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  code, .mono {
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* --- Header --- */
+  .header {
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .header h1 span { color: var(--amber); }
+  .header p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* --- Entry point --- */
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .entry-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  .entry code {
+    display: block;
+    color: var(--text);
+    word-break: break-all;
+    line-height: 1.8;
+  }
+  .entry .or {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin: 6px 0;
+    font-family: inherit;
+  }
+
+  /* --- Spine --- */
+  .spine {
+    position: relative;
+    padding-left: 32px;
+  }
+  .spine::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  /* --- Step --- */
+  .step {
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .step:last-child { margin-bottom: 0; }
+
+  .step-dot {
+    position: absolute;
+    left: -32px;
+    top: 18px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--ground);
+    border: 2px solid var(--amber);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber);
+    z-index: 1;
+  }
+  .step-dot.ok { border-color: var(--green); color: var(--green); }
+  .step-dot.warn { border-color: var(--red); color: var(--red); }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .step-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-file {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+  }
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .step-code {
+    background: var(--ground);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .step-code .comment { color: var(--muted); }
+  .step-code .string { color: var(--green); }
+  .step-code .cmd { color: var(--amber); }
+
+  /* --- Branches (error/decision) --- */
+  .branches {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .branch {
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .branch-happy {
+    background: var(--green-dim);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+  .branch-error {
+    background: var(--red-dim);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .branch-decision {
+    background: var(--blue-dim);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+  .branch-friction {
+    background: var(--red-dim);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-left: 3px solid var(--red);
+  }
+
+  .branch-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+  .branch-label .tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+  .tag-ok { background: rgba(16, 185, 129, 0.2); color: var(--green); }
+  .tag-err { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+  .tag-if { background: rgba(59, 130, 246, 0.2); color: var(--blue); }
+  .tag-friction { background: rgba(239, 68, 68, 0.25); color: var(--red); }
+
+  .branch-detail {
+    display: none;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .branch-detail code {
+    background: var(--ground);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .branch.open .branch-detail { display: block; }
+  .branch .caret {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.15s ease;
+  }
+  .branch.open .caret { transform: rotate(90deg); }
+
+  /* --- Section divider --- */
+  .section-break {
+    margin: 48px 0 32px;
+    padding-left: 32px;
+    position: relative;
+  }
+  .section-break h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .section-break p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .section-break::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    border-radius: 3px;
+  }
+  .section-break.amber::before { background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.3); }
+  .section-break.red::before { background: var(--red-dim); border: 1px solid rgba(239,68,68,0.25); }
+  .section-break.green::before { background: var(--green-dim); border: 1px solid rgba(16,185,129,0.25); }
+
+  /* --- Uninstall --- */
+  .uninstall {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .uninstall h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  /* --- Summary bar --- */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 32px 0;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .summary-card .num {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-card .num.amber { color: var(--amber); }
+  .summary-card .num.red { color: var(--red); }
+  .summary-card .num.green { color: var(--green); }
+  .summary-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* --- Responsive --- */
+  @media (max-width: 600px) {
+    .page { padding: 32px 16px 60px; }
+    .spine { padding-left: 28px; }
+    .step-dot { left: -28px; width: 18px; height: 18px; font-size: 10px; }
+    .spine::before { left: 9px; }
+    .step-card { padding: 12px 14px; }
+    .entry { padding: 14px 16px; }
+    .summary { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<div class="page">
+
+  <div class="header">
+    <h1><span>taxi-meter</span> &mdash; install flow</h1>
+    <p>Every path from paste to working meter. Click any branch to expand.</p>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="summary-card">
+      <div class="num amber">5</div>
+      <div class="label">Install Steps</div>
+    </div>
+    <div class="summary-card">
+      <div class="num red">3</div>
+      <div class="label">Friction Points</div>
+    </div>
+    <div class="summary-card">
+      <div class="num green">2</div>
+      <div class="label">Prereqs</div>
+    </div>
+    <div class="summary-card">
+      <div class="num amber">4</div>
+      <div class="label">Files Created</div>
+    </div>
+  </div>
+
+  <!-- Entry point -->
+  <div class="entry">
+    <div class="entry-label">User runs</div>
+    <code>bash &lt;(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh)</code>
+    <span class="or">or</span>
+    <code>git clone ... /tmp/taxi-meter && bash /tmp/taxi-meter/install.sh ~/my-project</code>
+  </div>
+
+  <!-- Prerequisites -->
+  <div class="section-break amber">
+    <h2>Prerequisites</h2>
+    <p>Checked implicitly, not upfront</p>
+  </div>
+
+  <div class="spine">
+    <div class="step">
+      <div class="step-dot warn">!</div>
+      <div class="step-card">
+        <div class="step-title">jq + python3 on PATH</div>
+        <div class="step-desc">Both required but never checked upfront. Failures surface later as silent no-ops.</div>
+        <div class="branches">
+          <div class="branch branch-error" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-err">no jq</span>
+              Settings.json manipulation fails silently
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              Without <code>jq</code>, install.sh can't merge the SessionStart hook into an existing <code>settings.json</code>. It falls through to the else branch and <strong>overwrites the entire file</strong> with a minimal config. If the user had other settings, they're gone.<br><br>
+              The statusline <code>mod_taxi()</code> also needs jq to read the timer file. No jq = meter never renders. No error. Just silence.
+            </div>
+          </div>
+          <div class="branch branch-error" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-err">no python3</span>
+              Timer file never written
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              The SessionStart hook uses python3 to write the JSON timer file. Without it, <code>.claude/sessions/{id}.json</code> never gets created. The statusline function checks for the file and returns empty. Meter shows nothing. No error message anywhere.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project-level install -->
+  <div class="section-break green">
+    <h2>Project-Level Install</h2>
+    <p>What install.sh actually does — 4 files into .claude/</p>
+  </div>
+
+  <div class="spine">
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-dot">1</div>
+      <div class="step-card">
+        <div class="step-title">Write hook script</div>
+        <div class="step-file">.claude/hooks/taxi-start.sh</div>
+        <div class="step-desc">Creates the SessionStart hook that writes a timestamp to a per-session JSON file.</div>
+        <div class="step-code">
+          <span class="comment"># On session start:</span><br>
+          <span class="cmd">mkdir -p</span> .claude/sessions/<br>
+          <span class="comment"># Write {start: epoch, session_id, completions: []}</span><br>
+          <span class="comment"># On resume: reset start, keep completions</span>
+        </div>
+        <div class="branches">
+          <div class="branch branch-happy">
+            <div class="branch-label">
+              <span class="tag tag-ok">ok</span>
+              Always succeeds if dir is writable
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-card">
+        <div class="step-title">Register hook in settings</div>
+        <div class="step-file">.claude/settings.json</div>
+        <div class="step-desc">Adds SessionStart hook entry so Claude Code runs the timer on every session.</div>
+        <div class="branches">
+          <div class="branch branch-decision" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-if">if</span>
+              settings.json exists + jq available
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              Checks if <code>.hooks.SessionStart</code> already has entries. If empty, merges the taxi hook via jq. If hooks already exist, <strong>warns and bails</strong> — user must add manually. This is the safe path but it's a friction point for projects with existing hooks.
+            </div>
+          </div>
+          <div class="branch branch-decision" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-if">else</span>
+              No settings.json or no jq
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              Creates a fresh <code>settings.json</code> with only the taxi hook. <strong>If settings.json existed but jq is missing, the file gets overwritten</strong> — this is a data loss path. The <code>-f</code> check passes, but without jq the script falls through to the else branch.
+            </div>
+          </div>
+          <div class="branch branch-friction" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-friction">friction</span>
+              Existing SessionStart hooks
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              If the project already has SessionStart hooks (common — other tools use them), the installer prints a warning and does nothing. The user must manually edit settings.json to add the taxi hook alongside existing ones. Many users will see the warning, not know what to do, and give up.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-card">
+        <div class="step-title">Statusline config</div>
+        <div class="step-file">.claude/statusline.json</div>
+        <div class="step-desc">Tells the statusline script to render the taxi module for this project.</div>
+        <div class="step-code">
+          <span class="string">{"modules": ["taxi"]}</span>
+        </div>
+        <div class="branches">
+          <div class="branch branch-happy">
+            <div class="branch-label">
+              <span class="tag tag-ok">new</span>
+              Creates the file — clean
+            </div>
+          </div>
+          <div class="branch branch-decision" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-if">exists</span>
+              Warns but doesn't merge
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              If the file already exists (user has other statusline modules), the installer warns but doesn't touch it. User must manually add <code>"taxi"</code> to their modules array. Not destructive, but another manual step.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step">
+      <div class="step-dot">4</div>
+      <div class="step-card">
+        <div class="step-title">Gitignore sessions</div>
+        <div class="step-file">.claude/.gitignore</div>
+        <div class="step-desc">Keeps per-session timer files out of version control.</div>
+        <div class="step-code">
+          <span class="string">sessions/</span>
+        </div>
+        <div class="branches">
+          <div class="branch branch-happy">
+            <div class="branch-label">
+              <span class="tag tag-ok">ok</span>
+              Appends or creates — always safe
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global setup -->
+  <div class="section-break red">
+    <h2>Global Setup</h2>
+    <p>Where the install falls apart — two manual steps the user has to figure out</p>
+  </div>
+
+  <div class="spine">
+
+    <!-- Step 5 -->
+    <div class="step">
+      <div class="step-dot warn">5</div>
+      <div class="step-card">
+        <div class="step-title">Global statusline script</div>
+        <div class="step-file">~/.claude/scripts/statusline.sh</div>
+        <div class="step-desc">The install checks for it. That's all. Three outcomes, two are dead ends.</div>
+        <div class="branches">
+          <div class="branch branch-happy" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-ok">ok</span>
+              Script exists + has mod_taxi()
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              User already has the modular statusline with the taxi module function. Everything works. This is only true if they installed taxi-meter before or manually set it up.
+            </div>
+          </div>
+          <div class="branch branch-friction" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-friction">friction</span>
+              Script exists but missing mod_taxi()
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              User has a statusline script but it doesn't have the taxi module function. The installer dumps a ~15-line bash function to the terminal and says "add this." User must:<br>
+              1. Copy the function from terminal output<br>
+              2. Open <code>~/.claude/scripts/statusline.sh</code><br>
+              3. Paste it in the right place<br>
+              4. Hope they didn't break the script<br><br>
+              <strong>This is where most users bail.</strong>
+            </div>
+          </div>
+          <div class="branch branch-friction" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-friction">friction</span>
+              No statusline script at all
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              User has never set up a modular statusline. The installer says "see README.md." User must:<br>
+              1. Copy <code>statusline.sh</code> from the taxi-meter repo to <code>~/.claude/scripts/</code><br>
+              2. Edit <code>~/.claude/settings.json</code> to add the <code>statusLine.command</code> setting<br>
+              3. Restart Claude Code<br><br>
+              Two files to create/edit, in a directory they may not know exists. <strong>The install printed "success" but nothing will work until they do this.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 (implicit) -->
+    <div class="step">
+      <div class="step-dot warn">6</div>
+      <div class="step-card">
+        <div class="step-title">Global settings.json statusLine entry</div>
+        <div class="step-file">~/.claude/settings.json</div>
+        <div class="step-desc">Not checked at all. If this isn't set, the statusline script never runs.</div>
+        <div class="step-code">
+          <span class="comment">// Required in ~/.claude/settings.json:</span><br>
+          <span class="string">"statusLine"</span>: {<br>
+          &nbsp;&nbsp;<span class="string">"type"</span>: <span class="string">"command"</span>,<br>
+          &nbsp;&nbsp;<span class="string">"command"</span>: <span class="string">"~/.claude/scripts/statusline.sh"</span><br>
+          }
+        </div>
+        <div class="branches">
+          <div class="branch branch-friction" onclick="toggle(this)">
+            <div class="branch-label">
+              <span class="tag tag-friction">invisible</span>
+              Never checked — silently required
+              <span class="caret">&#9654;</span>
+            </div>
+            <div class="branch-detail">
+              The installer never checks if the user's global <code>settings.json</code> has the <code>statusLine</code> entry pointing to the script. If it's missing, the statusline script simply never executes. The taxi module exists, the hook runs, the timer file gets written — but nothing reads it. <strong>Everything "installed" but nothing displays. No error.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Working state -->
+  <div class="section-break green">
+    <h2>Working State</h2>
+    <p>When everything lands — what actually happens each session</p>
+  </div>
+
+  <div class="spine">
+    <div class="step">
+      <div class="step-dot ok">&#10003;</div>
+      <div class="step-card">
+        <div class="step-title">Session lifecycle</div>
+        <div class="step-code">
+          <span class="comment"># 1. User starts Claude Code</span><br>
+          <span class="cmd">SessionStart hook</span> &rarr; taxi-start.sh runs<br>
+          &rarr; writes .claude/sessions/{session-id}.json<br><br>
+          <span class="comment"># 2. Statusline polls (every render)</span><br>
+          <span class="cmd">statusline.sh</span> &rarr; reads timer &rarr; calcs elapsed<br>
+          &rarr; displays: 🚕 12m30s $31.25 ($150/hr)<br><br>
+          <span class="comment"># 3. User resumes same session</span><br>
+          <span class="cmd">SessionStart hook</span> &rarr; resets start time<br>
+          &rarr; keeps completions[] intact<br><br>
+          <span class="comment"># 4. That's it. No stop. No invoice. No export.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disable/Uninstall -->
+  <div class="uninstall">
+    <h2>Disable &amp; Uninstall</h2>
+
+    <div class="spine" style="margin-top: 24px;">
+      <div class="step">
+        <div class="step-dot" style="border-color: var(--muted); color: var(--muted);">&#8722;</div>
+        <div class="step-card">
+          <div class="step-title">Disable for one project</div>
+          <div class="step-desc">Remove "taxi" from modules or delete the config file.</div>
+          <div class="step-code">
+            <span class="comment"># Option A: edit the file</span><br>
+            <span class="comment"># Remove "taxi" from .claude/statusline.json modules array</span><br><br>
+            <span class="comment"># Option B: delete it</span><br>
+            <span class="cmd">rm</span> .claude/statusline.json
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot" style="border-color: var(--muted); color: var(--muted);">&#215;</div>
+        <div class="step-card">
+          <div class="step-title">Full uninstall</div>
+          <div class="step-desc">Remove all taxi-meter files from the project.</div>
+          <div class="step-code">
+            <span class="cmd">rm</span> .claude/hooks/taxi-start.sh<br>
+            <span class="cmd">rm</span> .claude/statusline.json<br>
+            <span class="cmd">rm</span> -rf .claude/sessions/<br>
+            <span class="comment"># Then remove the SessionStart hook entry</span><br>
+            <span class="comment"># from .claude/settings.json manually</span>
+          </div>
+          <div class="branches">
+            <div class="branch branch-error" onclick="toggle(this)">
+              <div class="branch-label">
+                <span class="tag tag-err">note</span>
+                settings.json edit is manual
+                <span class="caret">&#9654;</span>
+              </div>
+              <div class="branch-detail">
+                There's no uninstall script. The user has to hand-edit <code>.claude/settings.json</code> to remove the SessionStart hook entry. If they have other hooks, they need to be careful not to break the JSON structure. If they delete the file, they lose all other project settings.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggle(el) {
+    el.classList.toggle('open');
+  }
+</script>
