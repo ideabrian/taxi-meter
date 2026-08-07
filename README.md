@@ -16,13 +16,13 @@ Timer resets when you resume a session. Each project has its own timer — other
 
 ```bash
 cd your-project
-bash <(curl -sL https://raw.githubusercontent.com/user/taxi-meter/main/install.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh)
 ```
 
 Or clone and run:
 
 ```bash
-git clone https://github.com/user/taxi-meter.git /tmp/taxi-meter
+git clone https://github.com/ideabrian/taxi-meter.git /tmp/taxi-meter
 bash /tmp/taxi-meter/install.sh ~/path/to/your-project
 ```
 
