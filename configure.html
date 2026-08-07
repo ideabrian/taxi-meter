@@ -1,0 +1,964 @@
+<title>Taxi Meter — Configure Your Install</title>
+<style>
+  :root {
+    --ground: #0f1318;
+    --surface: #181d25;
+    --surface-raised: #1e2530;
+    --border: #2a3040;
+    --text: #d1d5db;
+    --muted: #6b7280;
+    --amber: #f59e0b;
+    --amber-dim: rgba(245, 158, 11, 0.12);
+    --green: #10b981;
+    --green-dim: rgba(16, 185, 129, 0.10);
+    --blue: #3b82f6;
+    --slider-track: #2a3040;
+    --slider-thumb: #f59e0b;
+    --copy-bg: #10b981;
+    --copy-text: #022c22;
+    --input-bg: #1e2530;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #f7f6f3;
+      --surface: #ffffff;
+      --surface-raised: #f0efec;
+      --border: #ddd9d0;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --amber-dim: rgba(245, 158, 11, 0.08);
+      --green-dim: rgba(16, 185, 129, 0.06);
+      --slider-track: #ddd9d0;
+      --copy-bg: #059669;
+      --copy-text: #ffffff;
+      --input-bg: #f0efec;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1318;
+    --surface: #181d25;
+    --surface-raised: #1e2530;
+    --border: #2a3040;
+    --text: #d1d5db;
+    --muted: #6b7280;
+    --amber-dim: rgba(245, 158, 11, 0.12);
+    --green-dim: rgba(16, 185, 129, 0.10);
+    --slider-track: #2a3040;
+    --copy-bg: #10b981;
+    --copy-text: #022c22;
+    --input-bg: #1e2530;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--text);
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* --- Header --- */
+  .header {
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* --- Live meter display --- */
+  .meter-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .meter-readout {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--amber);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  .meter-label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .meter-example {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .meter-example code {
+    background: var(--surface-raised);
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--text);
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+
+  /* --- Controls --- */
+  .controls {
+    margin-bottom: 40px;
+  }
+  .control-group {
+    margin-bottom: 28px;
+  }
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .control-label span {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .control-label .value {
+    font-size: 14px;
+    color: var(--amber);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* Slider */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--slider-track);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--slider-thumb);
+    cursor: grab;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--slider-thumb);
+    cursor: grab;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  input[type="range"]:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .rate-presets {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .preset {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .preset:hover {
+    border-color: var(--amber);
+    color: var(--text);
+  }
+  .preset:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 1px;
+  }
+  .preset.active {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: var(--amber-dim);
+  }
+
+  /* Custom rate input */
+  .custom-rate {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .custom-rate label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .custom-rate input[type="number"] {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    width: 90px;
+    outline: none;
+  }
+  .custom-rate input[type="number"]:focus {
+    border-color: var(--amber);
+  }
+
+  /* --- Generated command --- */
+  .command-section {
+    margin-bottom: 32px;
+  }
+  .command-section h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .command-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+  }
+  .command-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--green);
+    word-break: break-all;
+    padding-right: 60px;
+    white-space: pre-wrap;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--copy-bg);
+    color: var(--copy-text);
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+  .copy-btn:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+  }
+  .copy-btn.copied {
+    background: var(--amber);
+    color: var(--ground);
+  }
+
+  /* --- File manifest --- */
+  .manifest {
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+    margin-top: 8px;
+  }
+  .manifest h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .manifest-group {
+    margin-bottom: 20px;
+  }
+  .manifest-group-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .manifest-group-label.downloaded { color: var(--blue); }
+  .manifest-group-label.created { color: var(--amber); }
+  .manifest-group-label.modified { color: var(--muted); }
+  .manifest-group ul {
+    list-style: none;
+    padding: 0;
+  }
+  .manifest-group li {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 3px 0;
+    padding-left: 20px;
+    position: relative;
+  }
+  .manifest-group li::before {
+    position: absolute;
+    left: 0;
+  }
+  .manifest-group.dl li::before { content: '↓'; color: var(--blue); }
+  .manifest-group.cr li::before { content: '+'; color: var(--amber); }
+  .manifest-group.mod li::before { content: '~'; color: var(--muted); }
+  .manifest-group li code {
+    background: var(--surface-raised);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .manifest-group li .file-desc {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* --- Uninstall --- */
+  .uninstall {
+    margin-top: 8px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .uninstall h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .uninstall p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .uninstall-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+  }
+  .uninstall-cmd {
+    font-size: 13px;
+    color: var(--text);
+    padding-right: 60px;
+  }
+  .uninstall-box .copy-btn {
+    background: var(--surface-raised);
+    color: var(--muted);
+  }
+  .uninstall-box .copy-btn:hover { color: var(--text); }
+
+  /* --- Source viewer --- */
+  .source-viewer {
+    margin-top: 12px;
+  }
+  .source-viewer details {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .source-viewer summary {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--amber);
+    cursor: pointer;
+    background: var(--surface);
+    border-left: 3px solid var(--amber);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    font-weight: 500;
+  }
+  .source-viewer summary::-webkit-details-marker { display: none; }
+  .source-viewer summary::before {
+    content: '▸';
+    font-size: 10px;
+    transition: transform 0.15s;
+  }
+  .source-viewer details[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .source-viewer summary:hover { color: var(--text); background: var(--amber-dim); }
+  .source-viewer summary:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: -2px;
+  }
+  .source-code-wrap {
+    position: relative;
+    background: var(--ground);
+    border-top: 1px solid var(--border);
+  }
+  .source-code-wrap .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--surface-raised);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 3px 8px;
+    z-index: 1;
+  }
+  .source-code-wrap .copy-btn:hover { color: var(--text); }
+  .source-code {
+    padding: 14px 16px;
+    padding-right: 70px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre;
+    font-family: inherit;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .source-code::-webkit-scrollbar { width: 6px; height: 6px; }
+  .source-code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* --- Footer --- */
+  .footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .footer a {
+    color: var(--amber);
+    text-decoration: none;
+  }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    .page { padding: 32px 16px 60px; }
+    .meter-readout { font-size: 24px; }
+    .rate-presets { gap: 6px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <h1>🚕 Taxi Meter — Configure</h1>
+    <p>Set your rate. Get an install command. Paste it in your project.</p>
+  </div>
+
+  <!-- Live meter preview -->
+  <div class="meter-display">
+    <div class="meter-readout" id="readout">🚕 12m30s $31.25 ($150/hr)</div>
+    <div class="meter-label">preview — 12 min 30 sec session</div>
+    <div class="meter-example">
+      your statusline will show:
+      <br>
+      <code id="statusline-preview">~/my-project | 🚕 12m30s $31.25 ($150/hr)</code>
+    </div>
+  </div>
+
+  <!-- Rate control -->
+  <div class="controls">
+    <div class="control-group">
+      <div class="control-label">
+        <span>Hourly rate</span>
+        <span class="value" id="rate-display">$150/hr</span>
+      </div>
+      <input type="range" id="rate-slider" min="25" max="500" step="5" value="150">
+      <div class="rate-presets">
+        <button class="preset" data-rate="50">$50</button>
+        <button class="preset" data-rate="75">$75</button>
+        <button class="preset" data-rate="100">$100</button>
+        <button class="preset active" data-rate="150">$150</button>
+        <button class="preset" data-rate="200">$200</button>
+        <button class="preset" data-rate="250">$250</button>
+        <button class="preset" data-rate="300">$300</button>
+      </div>
+      <div class="custom-rate">
+        <label for="rate-input">or type:</label>
+        <input type="number" id="rate-input" min="1" max="9999" value="150">
+        <span style="font-size:12px;color:var(--muted)">/hr</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generated command -->
+  <div class="command-section">
+    <h2>Install command</h2>
+    <div class="command-box">
+      <div class="command-text" id="command-output">bash &lt;(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh) --rate 150</div>
+      <button class="copy-btn" id="copy-btn" aria-label="Copy install command">Copy</button>
+    </div>
+  </div>
+
+  <!-- install.sh source -->
+  <div class="source-viewer">
+    <details>
+      <summary>👀 View install.sh source — see exactly what runs</summary>
+      <div class="source-code-wrap">
+        <button class="copy-btn" data-copy="install-src" aria-label="Copy install.sh source">Copy</button>
+        <pre class="source-code" id="install-src">#!/bin/bash
+# Taxi Meter — project billing timer for Claude Code
+# Installs into the current project's .claude/ directory
+#
+# Usage: curl -sL &lt;raw-url&gt;/install.sh | bash
+#    or: bash install.sh [project-dir]
+
+set -e
+
+# --- Parse flags ---
+RATE=150
+PROJECT=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --rate) RATE="$2"; shift 2 ;;
+    --rate=*) RATE="${1#*=}"; shift ;;
+    *) [ -z "$PROJECT" ] &amp;&amp; PROJECT="$1"; shift ;;
+  esac
+done
+PROJECT="${PROJECT:-.}"
+PROJECT=$(cd "$PROJECT" &amp;&amp; pwd)
+CLAUDE_DIR="$PROJECT/.claude"
+
+echo "🚕 Installing taxi meter into $PROJECT"
+
+# --- 0. Backup existing files we might modify ---
+BACKUP_DIR="$CLAUDE_DIR/taxi-backup"
+mkdir -p "$BACKUP_DIR"
+BACKED_UP=""
+for f in settings.json statusline.json .gitignore; do
+  if [ -f "$CLAUDE_DIR/$f" ]; then
+    cp "$CLAUDE_DIR/$f" "$BACKUP_DIR/$f"
+    BACKED_UP="$BACKED_UP $f"
+  fi
+done
+if [ -n "$BACKED_UP" ]; then
+  echo "  ✓ Backed up existing files:$BACKED_UP"
+  echo "    (stored in .claude/taxi-backup/)"
+fi
+
+# --- 1. Session timer hook ---
+mkdir -p "$CLAUDE_DIR/hooks"
+cat &gt; "$CLAUDE_DIR/hooks/taxi-start.sh" &lt;&lt; 'HOOK'
+#!/bin/bash
+# Taxi meter — create/reset session timer on start
+SID="${CLAUDE_CODE_SESSION_ID:-unknown}"
+DIR="$(pwd)/.claude/sessions"
+TIMER="$DIR/$SID.json"
+
+mkdir -p "$DIR"
+
+if [ -f "$TIMER" ] &amp;&amp; command -v python3 &amp;&gt;/dev/null; then
+  python3 -c "
+import json, time
+with open('$TIMER') as f:
+    timer = json.load(f)
+timer['start'] = int(time.time())
+with open('$TIMER', 'w') as f:
+    json.dump(timer, f, indent=2)
+"
+  echo '{"result":"⏱ Taxi meter reset (resumed)"}'
+else
+  python3 -c "
+import json, time
+timer = {
+    'start': int(time.time()),
+    'session_id': '$SID',
+    'completions': []
+}
+with open('$TIMER', 'w') as f:
+    json.dump(timer, f, indent=2)
+"
+  echo '{"result":"⏱ Taxi meter started"}'
+fi
+HOOK
+chmod +x "$CLAUDE_DIR/hooks/taxi-start.sh"
+
+# --- 2. Register hook in settings ---
+SETTINGS="$CLAUDE_DIR/settings.json"
+if [ -f "$SETTINGS" ] &amp;&amp; command -v jq &amp;&gt;/dev/null; then
+  HAS_TAXI=$(jq '[.hooks.SessionStart[]?.hooks[]?.command // empty]
+    | any(contains("taxi-start"))' "$SETTINGS" 2&gt;/dev/null)
+  if [ "$HAS_TAXI" = "true" ]; then
+    echo "  ✓ settings.json already has taxi hook"
+  elif jq -e '.hooks.SessionStart' "$SETTINGS" &amp;&gt;/dev/null; then
+    jq '.hooks.SessionStart += [{"hooks":[{"type":"command",
+      "command":"bash .claude/hooks/taxi-start.sh"}]}]' \
+      "$SETTINGS" &gt; "$SETTINGS.tmp" &amp;&amp; mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "  ✓ Appended taxi hook to existing SessionStart hooks"
+  else
+    jq '.hooks.SessionStart = [{"hooks":[{"type":"command",
+      "command":"bash .claude/hooks/taxi-start.sh"}]}]' \
+      "$SETTINGS" &gt; "$SETTINGS.tmp" &amp;&amp; mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "  ✓ Added SessionStart hook to settings.json"
+  fi
+else
+  mkdir -p "$CLAUDE_DIR"
+  cat &gt; "$SETTINGS" &lt;&lt; 'SETTINGS_JSON'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/taxi-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+SETTINGS_JSON
+  echo "  ✓ Created settings.json with SessionStart hook"
+fi
+
+# --- 3. Statusline config ---
+SL_CONFIG="$CLAUDE_DIR/statusline.json"
+if [ ! -f "$SL_CONFIG" ]; then
+  echo '{"modules":["taxi"]}' &gt; "$SL_CONFIG"
+  echo "  ✓ Created statusline.json with taxi module"
+elif command -v jq &amp;&gt;/dev/null; then
+  HAS_TAXI=$(jq '.modules // [] | index("taxi")' "$SL_CONFIG" 2&gt;/dev/null)
+  if [ "$HAS_TAXI" = "null" ]; then
+    jq '.modules = (.modules // []) + ["taxi"]' "$SL_CONFIG" \
+      &gt; "$SL_CONFIG.tmp" &amp;&amp; mv "$SL_CONFIG.tmp" "$SL_CONFIG"
+    echo "  ✓ Added taxi to existing statusline.json modules"
+  else
+    echo "  ✓ statusline.json already has taxi module"
+  fi
+else
+  echo "  ⚠ statusline.json exists but jq missing — add \"taxi\" to modules manually"
+fi
+
+# --- 4. Write rate config ---
+RATE_PER_MIN=$(python3 -c "print(round($RATE / 60, 4))")
+echo "{\"rate\": $RATE, \"rate_per_min\": $RATE_PER_MIN}" \
+  &gt; "$CLAUDE_DIR/taxi-config.json"
+echo "  ✓ Set rate to \$$RATE/hr (\$$RATE_PER_MIN/min)"
+
+# --- 5. Gitignore sessions ---
+GITIGNORE="$CLAUDE_DIR/.gitignore"
+if [ -f "$GITIGNORE" ]; then
+  grep -q "sessions/" "$GITIGNORE" 2&gt;/dev/null || echo "sessions/" &gt;&gt; "$GITIGNORE"
+  grep -q "taxi-backup/" "$GITIGNORE" 2&gt;/dev/null || echo "taxi-backup/" &gt;&gt; "$GITIGNORE"
+else
+  printf "sessions/\ntaxi-backup/\n" &gt; "$GITIGNORE"
+fi
+echo "  ✓ Added sessions/, taxi-backup/ to .claude/.gitignore"
+
+echo ""
+echo "🚕 Taxi meter installed! Restart Claude Code to activate."
+echo "   Rate: \$$RATE/hr (\$$RATE_PER_MIN/min)"</pre>
+      </div>
+    </details>
+  </div>
+
+  <!-- File manifest -->
+  <div class="manifest">
+    <h2>What this touches</h2>
+
+    <div class="manifest-group dl">
+      <div class="manifest-group-label downloaded">Downloaded from repo</div>
+      <ul>
+        <li><code>.claude/hooks/taxi-start.sh</code> <span class="file-desc">— the timer hook</span></li>
+      </ul>
+    </div>
+
+    <div class="manifest-group cr">
+      <div class="manifest-group-label created">Created locally</div>
+      <ul>
+        <li><code>.claude/taxi-config.json</code> <span class="file-desc">— your rate</span></li>
+        <li><code>.claude/statusline.json</code> <span class="file-desc">— enables taxi module</span></li>
+        <li><code>.claude/sessions/</code> <span class="file-desc">— timer data (gitignored)</span></li>
+      </ul>
+    </div>
+
+    <div class="manifest-group mod">
+      <div class="manifest-group-label modified">Modified (if they exist)</div>
+      <ul>
+        <li><code>.claude/settings.json</code> <span class="file-desc">— appends SessionStart hook</span></li>
+        <li><code>.claude/statusline.json</code> <span class="file-desc">— adds "taxi" to modules</span></li>
+        <li><code>.claude/.gitignore</code> <span class="file-desc">— adds <code>sessions/</code> line</span></li>
+      </ul>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted);">
+        Originals are saved to <code>.claude/taxi-backup/</code> before any changes.
+        Uninstall restores them exactly.
+      </div>
+    </div>
+  </div>
+
+  <!-- Uninstall -->
+  <div class="uninstall">
+    <h2>Uninstall</h2>
+    <p>Restores your original files from backup, removes everything taxi-meter added.</p>
+    <div class="uninstall-box">
+      <div class="uninstall-cmd" id="uninstall-output">bash &lt;(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/uninstall.sh)</div>
+      <button class="copy-btn" id="copy-uninstall-btn" aria-label="Copy uninstall command">Copy</button>
+    </div>
+  </div>
+
+  <!-- uninstall.sh source -->
+  <div class="source-viewer" style="margin-top:12px;">
+    <details>
+      <summary>👀 View uninstall.sh source — see exactly what runs</summary>
+      <div class="source-code-wrap">
+        <button class="copy-btn" data-copy="uninstall-src" aria-label="Copy uninstall.sh source">Copy</button>
+        <pre class="source-code" id="uninstall-src">#!/bin/bash
+# Taxi Meter — clean uninstall
+# Removes only what install.sh added. Does not delete .claude/ itself.
+#
+# Usage: bash uninstall.sh [project-dir]
+
+set -e
+
+PROJECT="${1:-.}"
+PROJECT=$(cd "$PROJECT" &amp;&amp; pwd)
+CLAUDE_DIR="$PROJECT/.claude"
+
+echo "🚕 Uninstalling taxi meter from $PROJECT"
+echo ""
+
+# --- 1. Downloaded files ---
+echo "  Removing downloaded files:"
+if [ -f "$CLAUDE_DIR/hooks/taxi-start.sh" ]; then
+  rm "$CLAUDE_DIR/hooks/taxi-start.sh"
+  echo "    ✓ .claude/hooks/taxi-start.sh"
+else
+  echo "    · .claude/hooks/taxi-start.sh (not found)"
+fi
+
+# --- 2. Created files ---
+echo "  Removing created files:"
+if [ -f "$CLAUDE_DIR/taxi-config.json" ]; then
+  rm "$CLAUDE_DIR/taxi-config.json"
+  echo "    ✓ .claude/taxi-config.json"
+else
+  echo "    · .claude/taxi-config.json (not found)"
+fi
+
+if [ -f "$CLAUDE_DIR/statusline.json" ]; then
+  rm "$CLAUDE_DIR/statusline.json"
+  echo "    ✓ .claude/statusline.json"
+else
+  echo "    · .claude/statusline.json (not found)"
+fi
+
+if [ -d "$CLAUDE_DIR/sessions" ]; then
+  rm -rf "$CLAUDE_DIR/sessions"
+  echo "    ✓ .claude/sessions/"
+else
+  echo "    · .claude/sessions/ (not found)"
+fi
+
+# --- 3. Restore or surgically clean modified files ---
+BACKUP_DIR="$CLAUDE_DIR/taxi-backup"
+
+echo "  Restoring modified files:"
+
+SETTINGS="$CLAUDE_DIR/settings.json"
+if [ -f "$BACKUP_DIR/settings.json" ]; then
+  cp "$BACKUP_DIR/settings.json" "$SETTINGS"
+  echo "    ✓ .claude/settings.json (restored from backup)"
+elif [ -f "$SETTINGS" ] &amp;&amp; command -v jq &amp;&gt;/dev/null; then
+  HAS_TAXI=$(jq '.hooks.SessionStart[]?.hooks[]?
+    | select(.command | contains("taxi-start"))' "$SETTINGS" 2&gt;/dev/null)
+  if [ -n "$HAS_TAXI" ]; then
+    jq '
+      .hooks.SessionStart |= [
+        .[] | .hooks |= [.[] | select(.command
+          | contains("taxi-start") | not)]
+      ] |
+      .hooks.SessionStart |= [.[] | select(.hooks | length &gt; 0)] |
+      if .hooks.SessionStart == [] then del(.hooks.SessionStart)
+        else . end |
+      if .hooks == {} then del(.hooks) else . end
+    ' "$SETTINGS" &gt; "$SETTINGS.tmp" &amp;&amp; mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "    ✓ .claude/settings.json (surgically removed taxi hook)"
+  else
+    echo "    · .claude/settings.json (no taxi hook found)"
+  fi
+else
+  echo "    · .claude/settings.json (no backup, not found, or jq missing)"
+fi
+
+GITIGNORE="$CLAUDE_DIR/.gitignore"
+if [ -f "$BACKUP_DIR/.gitignore" ]; then
+  cp "$BACKUP_DIR/.gitignore" "$GITIGNORE"
+  echo "    ✓ .claude/.gitignore (restored from backup)"
+elif [ -f "$GITIGNORE" ]; then
+  grep -v -E "sessions/|taxi-backup/" "$GITIGNORE" \
+    | sed '/^$/d' &gt; "$GITIGNORE.tmp"
+  if [ -s "$GITIGNORE.tmp" ]; then
+    mv "$GITIGNORE.tmp" "$GITIGNORE"
+    echo "    ✓ .claude/.gitignore (removed taxi lines)"
+  else
+    rm -f "$GITIGNORE.tmp" "$GITIGNORE"
+    echo "    ✓ .claude/.gitignore (was taxi-only, removed)"
+  fi
+else
+  echo "    · .claude/.gitignore (not found)"
+fi
+
+SL_CONFIG="$CLAUDE_DIR/statusline.json"
+if [ -f "$BACKUP_DIR/statusline.json" ]; then
+  cp "$BACKUP_DIR/statusline.json" "$SL_CONFIG"
+  echo "    ✓ .claude/statusline.json (restored from backup)"
+fi
+
+# --- 4. Clean up backup dir ---
+if [ -d "$BACKUP_DIR" ]; then
+  rm -rf "$BACKUP_DIR"
+  echo "    ✓ .claude/taxi-backup/ (removed)"
+fi
+
+# --- 5. Clean up empty dirs ---
+rmdir "$CLAUDE_DIR/hooks" 2&gt;/dev/null \
+  &amp;&amp; echo "    ✓ .claude/hooks/ (empty, removed)" || true
+
+echo ""
+echo "🚕 Taxi meter removed. No files left behind."
+echo "   Your .claude/ directory and other settings are untouched."</pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/ideabrian/taxi-meter">GitHub</a> · run in your project directory · timer resets each session
+  </div>
+</div>
+
+<script>
+  const slider = document.getElementById('rate-slider');
+  const rateInput = document.getElementById('rate-input');
+  const rateDisplay = document.getElementById('rate-display');
+  const readout = document.getElementById('readout');
+  const statusPreview = document.getElementById('statusline-preview');
+  const commandOutput = document.getElementById('command-output');
+  const copyBtn = document.getElementById('copy-btn');
+  const presets = document.querySelectorAll('.preset');
+
+  const PREVIEW_MINS = 12;
+  const PREVIEW_SECS = 30;
+  const BASE_URL = 'https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh';
+
+  function update(rate) {
+    rate = Math.max(1, Math.min(9999, parseInt(rate) || 150));
+    const rpm = rate / 60;
+    const fare = (rpm * PREVIEW_MINS + rpm * PREVIEW_SECS / 60).toFixed(2);
+
+    rateDisplay.textContent = '$' + rate + '/hr';
+    readout.textContent = '🚕 12m30s $' + fare + ' ($' + rate + '/hr)';
+    statusPreview.textContent = '~/my-project | 🚕 12m30s $' + fare + ' ($' + rate + '/hr)';
+
+    if (rate === 150) {
+      commandOutput.textContent = 'bash <(curl -sL ' + BASE_URL + ')';
+    } else {
+      commandOutput.textContent = 'bash <(curl -sL ' + BASE_URL + ') --rate ' + rate;
+    }
+
+    // sync inputs
+    slider.value = Math.min(500, Math.max(25, rate));
+    rateInput.value = rate;
+
+    // update preset highlights
+    presets.forEach(p => {
+      p.classList.toggle('active', parseInt(p.dataset.rate) === rate);
+    });
+  }
+
+  slider.addEventListener('input', () => update(slider.value));
+  rateInput.addEventListener('input', () => update(rateInput.value));
+
+  presets.forEach(btn => {
+    btn.addEventListener('click', () => update(btn.dataset.rate));
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const text = commandOutput.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.textContent = 'Copied!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+
+  // Uninstall copy button
+  const copyUninstallBtn = document.getElementById('copy-uninstall-btn');
+  const uninstallOutput = document.getElementById('uninstall-output');
+  copyUninstallBtn.addEventListener('click', () => {
+    const text = uninstallOutput.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      copyUninstallBtn.textContent = 'Copied!';
+      copyUninstallBtn.classList.add('copied');
+      setTimeout(() => {
+        copyUninstallBtn.textContent = 'Copy';
+        copyUninstallBtn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+
+  // Source viewer copy buttons
+  document.querySelectorAll('.source-code-wrap .copy-btn[data-copy]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const src = document.getElementById(btn.dataset.copy);
+      navigator.clipboard.writeText(src.textContent).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    });
+  });
+
+  // init
+  update(150);
+</script>

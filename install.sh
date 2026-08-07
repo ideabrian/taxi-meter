@@ -7,11 +7,36 @@
 
 set -e
 
-PROJECT="${1:-.}"
+# --- Parse flags ---
+RATE=150
+PROJECT=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --rate) RATE="$2"; shift 2 ;;
+    --rate=*) RATE="${1#*=}"; shift ;;
+    *) [ -z "$PROJECT" ] && PROJECT="$1"; shift ;;
+  esac
+done
+PROJECT="${PROJECT:-.}"
 PROJECT=$(cd "$PROJECT" && pwd)
 CLAUDE_DIR="$PROJECT/.claude"
 
 echo "🚕 Installing taxi meter into $PROJECT"
+
+# --- 0. Backup existing files we might modify ---
+BACKUP_DIR="$CLAUDE_DIR/taxi-backup"
+mkdir -p "$BACKUP_DIR"
+BACKED_UP=""
+for f in settings.json statusline.json .gitignore; do
+  if [ -f "$CLAUDE_DIR/$f" ]; then
+    cp "$CLAUDE_DIR/$f" "$BACKUP_DIR/$f"
+    BACKED_UP="$BACKED_UP $f"
+  fi
+done
+if [ -n "$BACKED_UP" ]; then
+  echo "  ✓ Backed up existing files:$BACKED_UP"
+  echo "    (stored in .claude/taxi-backup/)"
+fi
 
 # --- 1. Session timer hook ---
 mkdir -p "$CLAUDE_DIR/hooks"
@@ -54,12 +79,15 @@ chmod +x "$CLAUDE_DIR/hooks/taxi-start.sh"
 SETTINGS="$CLAUDE_DIR/settings.json"
 if [ -f "$SETTINGS" ] && command -v jq &>/dev/null; then
   # Check if SessionStart hooks already exist
-  HAS_HOOK=$(jq '.hooks.SessionStart // empty' "$SETTINGS" 2>/dev/null)
-  if [ -z "$HAS_HOOK" ]; then
+  HAS_TAXI=$(jq '[.hooks.SessionStart[]?.hooks[]?.command // empty] | any(contains("taxi-start"))' "$SETTINGS" 2>/dev/null)
+  if [ "$HAS_TAXI" = "true" ]; then
+    echo "  ✓ settings.json already has taxi hook"
+  elif jq -e '.hooks.SessionStart' "$SETTINGS" &>/dev/null; then
+    jq '.hooks.SessionStart += [{"hooks":[{"type":"command","command":"bash .claude/hooks/taxi-start.sh"}]}]' "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "  ✓ Appended taxi hook to existing SessionStart hooks"
+  else
     jq '.hooks.SessionStart = [{"hooks":[{"type":"command","command":"bash .claude/hooks/taxi-start.sh"}]}]' "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
     echo "  ✓ Added SessionStart hook to settings.json"
-  else
-    echo "  ⚠ SessionStart hook already exists — add taxi-start.sh manually if needed"
   fi
 else
   # No settings.json yet — create minimal one
@@ -88,20 +116,34 @@ SL_CONFIG="$CLAUDE_DIR/statusline.json"
 if [ ! -f "$SL_CONFIG" ]; then
   echo '{"modules":["taxi"]}' > "$SL_CONFIG"
   echo "  ✓ Created statusline.json with taxi module"
+elif command -v jq &>/dev/null; then
+  HAS_TAXI=$(jq '.modules // [] | index("taxi")' "$SL_CONFIG" 2>/dev/null)
+  if [ "$HAS_TAXI" = "null" ]; then
+    jq '.modules = (.modules // []) + ["taxi"]' "$SL_CONFIG" > "$SL_CONFIG.tmp" && mv "$SL_CONFIG.tmp" "$SL_CONFIG"
+    echo "  ✓ Added taxi to existing statusline.json modules"
+  else
+    echo "  ✓ statusline.json already has taxi module"
+  fi
 else
-  echo "  ⚠ statusline.json already exists — ensure 'taxi' is in modules array"
+  echo "  ⚠ statusline.json exists but jq missing — add \"taxi\" to modules manually"
 fi
 
-# --- 4. Gitignore sessions ---
+# --- 4. Write rate config ---
+RATE_PER_MIN=$(python3 -c "print(round($RATE / 60, 4))")
+echo "{\"rate\": $RATE, \"rate_per_min\": $RATE_PER_MIN}" > "$CLAUDE_DIR/taxi-config.json"
+echo "  ✓ Set rate to \$$RATE/hr (\$$RATE_PER_MIN/min)"
+
+# --- 5. Gitignore sessions ---
 GITIGNORE="$CLAUDE_DIR/.gitignore"
 if [ -f "$GITIGNORE" ]; then
   grep -q "sessions/" "$GITIGNORE" 2>/dev/null || echo "sessions/" >> "$GITIGNORE"
+  grep -q "taxi-backup/" "$GITIGNORE" 2>/dev/null || echo "taxi-backup/" >> "$GITIGNORE"
 else
-  echo "sessions/" > "$GITIGNORE"
+  printf "sessions/\ntaxi-backup/\n" > "$GITIGNORE"
 fi
-echo "  ✓ Added sessions/ to .claude/.gitignore"
+echo "  ✓ Added sessions/, taxi-backup/ to .claude/.gitignore"
 
-# --- 5. Statusline module check ---
+# --- 6. Statusline module check ---
 STATUSLINE_SCRIPT="$HOME/.claude/scripts/statusline.sh"
 if [ -f "$STATUSLINE_SCRIPT" ]; then
   if grep -q "mod_taxi" "$STATUSLINE_SCRIPT"; then
@@ -136,5 +178,6 @@ fi
 
 echo ""
 echo "🚕 Taxi meter installed! Restart Claude Code to activate."
-echo "   Rate: \$150/hr (\$2.50/min)"
+echo "   Rate: \$$RATE/hr (\$$RATE_PER_MIN/min)"
 echo "   Timer resets each session. Disable: remove 'taxi' from .claude/statusline.json"
+echo "   Change rate: edit .claude/taxi-config.json"

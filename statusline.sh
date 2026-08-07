@@ -67,12 +67,19 @@ mod_taxi() {
     command -v jq &>/dev/null || return
     local start=$(jq -r '.start' "$timer" 2>/dev/null)
     [ -z "$start" ] || [ "$start" = "null" ] && return
+    local config="${CWD}/.claude/taxi-config.json"
+    local rate=150
+    local rpm=2.5
+    if [ -f "$config" ]; then
+        rate=$(jq -r '.rate // 150' "$config" 2>/dev/null)
+        rpm=$(jq -r '.rate_per_min // 2.5' "$config" 2>/dev/null)
+    fi
     local now=$(date +%s)
     local elapsed=$((now - start))
     local mins=$((elapsed / 60))
     local secs=$((elapsed % 60))
-    local fare=$(python3 -c "print(f'{2.50 * $mins + 2.50 * $secs / 60:.2f}')" 2>/dev/null || echo "0.00")
-    echo "🚕 ${mins}m${secs}s \$${fare} (\$150/hr)"
+    local fare=$(python3 -c "print(f'{$rpm * $mins + $rpm * $secs / 60:.2f}')" 2>/dev/null || echo "0.00")
+    echo "🚕 ${mins}m${secs}s \$${fare} (\$${rate}/hr)"
 }
 
 mod_git() {
