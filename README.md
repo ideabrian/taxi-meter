@@ -14,8 +14,9 @@ Timer resets when you resume a session. Each project has its own timer — other
 
 ## Install
 
+`cd` into your project, then run:
+
 ```bash
-cd your-project
 bash <(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh)
 ```
 
