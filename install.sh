@@ -23,17 +23,36 @@ PROJECT="${PROJECT:-.}"
 PROJECT=$(cd "$PROJECT" && pwd)
 CLAUDE_DIR="$PROJECT/.claude"
 
-# --- Uninstall ---
+# --- Uninstall (delegate to uninstall.sh if available, otherwise inline) ---
 if [ "$UNINSTALL" = true ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+  if [ -f "$SCRIPT_DIR/uninstall.sh" ]; then
+    exec bash "$SCRIPT_DIR/uninstall.sh" "$PROJECT"
+  fi
+  # Inline fallback for curl|bash users who only have install.sh
   echo "🚕 Uninstalling taxi meter from $PROJECT"
   rm -f "$CLAUDE_DIR/hooks/taxi-start.sh"
   rm -f "$CLAUDE_DIR/statusline.json"
   rm -f "$CLAUDE_DIR/taxi-config.json"
   rm -rf "$CLAUDE_DIR/sessions/"
-  if [ -f "$CLAUDE_DIR/settings.json" ] && command -v jq &>/dev/null; then
-    jq 'if .hooks.SessionStart then .hooks.SessionStart = [.hooks.SessionStart[] | select(.hooks | any(.command | contains("taxi-start")) | not)] | if .hooks.SessionStart == [] then del(.hooks.SessionStart) else . end else . end' "$CLAUDE_DIR/settings.json" > "$CLAUDE_DIR/settings.json.tmp" && mv "$CLAUDE_DIR/settings.json.tmp" "$CLAUDE_DIR/settings.json"
-    echo "  ✓ Removed taxi hook from settings.json"
+  # Restore backups if available
+  BACKUP_DIR="$CLAUDE_DIR/taxi-backup"
+  if [ -d "$BACKUP_DIR" ]; then
+    for f in settings.json statusline.json .gitignore; do
+      [ -f "$BACKUP_DIR/$f" ] && cp "$BACKUP_DIR/$f" "$CLAUDE_DIR/$f"
+    done
+    rm -rf "$BACKUP_DIR"
+    echo "  ✓ Restored files from backup"
+  elif [ -f "$CLAUDE_DIR/settings.json" ] && command -v jq &>/dev/null; then
+    jq '
+      .hooks.SessionStart |= [.[] | .hooks |= [.[] | select(.command | contains("taxi-start") | not)]] |
+      .hooks.SessionStart |= [.[] | select(.hooks | length > 0)] |
+      if .hooks.SessionStart == [] then del(.hooks.SessionStart) else . end |
+      if .hooks == {} then del(.hooks) else . end
+    ' "$CLAUDE_DIR/settings.json" > "$CLAUDE_DIR/settings.json.tmp" && mv "$CLAUDE_DIR/settings.json.tmp" "$CLAUDE_DIR/settings.json"
+    echo "  ✓ Surgically removed taxi hook from settings.json"
   fi
+  rmdir "$CLAUDE_DIR/hooks" 2>/dev/null || true
   echo "  ✓ Removed taxi-start.sh, statusline.json, taxi-config.json, sessions/"
   echo ""
   echo "🚕 Uninstalled. Global statusline script untouched."
@@ -53,6 +72,20 @@ if [ -n "$MISSING" ]; then
 fi
 
 echo "🚕 Installing taxi meter into $PROJECT"
+
+# --- 0. Backup existing files we might modify ---
+BACKUP_DIR="$CLAUDE_DIR/taxi-backup"
+mkdir -p "$BACKUP_DIR"
+BACKED_UP=""
+for f in settings.json statusline.json .gitignore; do
+  if [ -f "$CLAUDE_DIR/$f" ]; then
+    cp "$CLAUDE_DIR/$f" "$BACKUP_DIR/$f"
+    BACKED_UP="$BACKED_UP $f"
+  fi
+done
+if [ -n "$BACKED_UP" ]; then
+  echo "  ✓ Backed up:$BACKED_UP → .claude/taxi-backup/"
+fi
 
 # --- 1. Session timer hook ---
 mkdir -p "$CLAUDE_DIR/hooks"
@@ -146,21 +179,21 @@ echo "  ✓ Rate: \$$RATE/hr"
 GITIGNORE="$CLAUDE_DIR/.gitignore"
 if [ -f "$GITIGNORE" ]; then
   grep -q "sessions/" "$GITIGNORE" 2>/dev/null || echo "sessions/" >> "$GITIGNORE"
+  grep -q "taxi-backup/" "$GITIGNORE" 2>/dev/null || echo "taxi-backup/" >> "$GITIGNORE"
 else
-  echo "sessions/" > "$GITIGNORE"
+  printf "sessions/\ntaxi-backup/\n" > "$GITIGNORE"
 fi
-echo "  ✓ Gitignore: .claude/sessions/"
+echo "  ✓ Gitignore: sessions/, taxi-backup/"
 
 # --- 6. Global statusline script ---
 GLOBAL_SCRIPTS="$HOME/.claude/scripts"
 STATUSLINE_SCRIPT="$GLOBAL_SCRIPTS/statusline.sh"
-SCRIPT_SOURCE="$(cd "$(dirname "$0")" && pwd)/statusline.sh"
+SCRIPT_SOURCE="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/statusline.sh"
 
 if [ -f "$STATUSLINE_SCRIPT" ]; then
   if grep -q "mod_taxi" "$STATUSLINE_SCRIPT"; then
     echo "  ✓ Global statusline already has mod_taxi()"
   else
-    # Append mod_taxi before the "# --- Assemble ---" line, or at end
     MOD_TAXI='
 mod_taxi() {
     local sid="${CLAUDE_CODE_SESSION_ID:-}"
@@ -184,9 +217,7 @@ mod_taxi() {
     echo "🚕 ${mins}m${secs}s \$${fare} (\$${rate_per_hr}/hr)"
 }'
     if grep -q "# --- Assemble ---" "$STATUSLINE_SCRIPT"; then
-      # Insert before the assemble section
       python3 -c "
-import re
 with open('$STATUSLINE_SCRIPT') as f:
     content = f.read()
 content = content.replace('# --- Assemble ---', '''$MOD_TAXI
@@ -207,7 +238,6 @@ else
     chmod +x "$STATUSLINE_SCRIPT"
     echo "  ✓ Installed global statusline script from repo"
   else
-    # Minimal statusline with taxi support
     cat > "$STATUSLINE_SCRIPT" << 'SLSCRIPT'
 #!/bin/bash
 input=$(cat)
@@ -281,8 +311,7 @@ fi
 # --- 7. Global statusLine setting ---
 GLOBAL_SETTINGS="$HOME/.claude/settings.json"
 if [ -f "$GLOBAL_SETTINGS" ]; then
-  HAS_SL=$(jq -e '.statusLine' "$GLOBAL_SETTINGS" 2>/dev/null)
-  if [ $? -eq 0 ]; then
+  if jq -e '.statusLine' "$GLOBAL_SETTINGS" &>/dev/null; then
     echo "  ✓ Global statusLine setting already configured"
   else
     jq '. + {"statusLine":{"type":"command","command":"~/.claude/scripts/statusline.sh"}}' "$GLOBAL_SETTINGS" > "$GLOBAL_SETTINGS.tmp" && mv "$GLOBAL_SETTINGS.tmp" "$GLOBAL_SETTINGS"
@@ -301,8 +330,16 @@ GSETTINGS
   echo "  ✓ Created global settings.json with statusLine"
 fi
 
+# --- 8. Auto-start for current session ---
+SID="${CLAUDE_CODE_SESSION_ID:-}"
+if [ -n "$SID" ] && [ ! -f "$CLAUDE_DIR/sessions/$SID.json" ]; then
+  CLAUDE_CODE_SESSION_ID="$SID" bash "$CLAUDE_DIR/hooks/taxi-start.sh" >/dev/null 2>&1
+  echo "  ✓ Timer started for current session"
+fi
+
 echo ""
-echo "🚕 Installed! Restart Claude Code to activate."
-echo "   Rate: \$$RATE/hr — change with: bash install.sh --rate 200"
+echo "🚕 Installed! Rate: \$$RATE/hr"
+echo "   Configure: https://ideabrian.github.io/taxi-meter/configure.html"
+echo "   Change rate: bash install.sh --rate N"
 echo "   Disable: remove 'taxi' from .claude/statusline.json"
 echo "   Uninstall: bash install.sh --uninstall"

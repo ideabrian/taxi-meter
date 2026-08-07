@@ -10,7 +10,9 @@ Timer resets when you resume a session. Each project has its own timer.
 
 ## Install
 
-`cd` into your project, then run:
+**[Configure your install](https://ideabrian.github.io/taxi-meter/configure.html)** — pick your rate, preview the meter, get a copy-paste command.
+
+Or run the default ($150/hr):
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh)
@@ -22,7 +24,7 @@ Custom rate:
 bash <(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh) --rate 200
 ```
 
-That's it. Restart Claude Code. The installer handles everything — project hooks, global statusline script, global settings. If you already have a statusline script, it adds `mod_taxi()` without touching the rest.
+The installer handles everything — project hooks, global statusline script, global settings. Existing configs are backed up to `.claude/taxi-backup/` before any changes.
 
 ## What gets installed
 
@@ -31,8 +33,9 @@ That's it. Restart Claude Code. The installer handles everything — project hoo
 .claude/
   hooks/taxi-start.sh     — starts/resets timer on session start
   statusline.json         — opts this project into the taxi module
-  taxi-config.json        — rate config (default $150/hr)
+  taxi-config.json        — rate config
   sessions/               — timer files (gitignored)
+  taxi-backup/            — originals before modification (gitignored)
 ```
 
 **Globally (if not already present):**
@@ -40,6 +43,8 @@ That's it. Restart Claude Code. The installer handles everything — project hoo
 ~/.claude/scripts/statusline.sh   — modular statusline with taxi module
 ~/.claude/settings.json           — statusLine command entry
 ```
+
+If you already have a statusline script, the installer adds `mod_taxi()` without touching the rest. If you already have global settings, it merges the `statusLine` entry.
 
 ## Requirements
 
@@ -63,7 +68,13 @@ The installer checks for both upfront and exits with install instructions if eit
 bash <(curl -sL https://raw.githubusercontent.com/ideabrian/taxi-meter/main/install.sh) --uninstall
 ```
 
-Removes all project-level taxi files and the hook from settings.json. Global statusline script is left untouched.
+Or if you cloned the repo:
+
+```bash
+bash uninstall.sh
+```
+
+Restores original files from backup, surgically removes the taxi hook from settings.json (preserving other hooks), and cleans up empty directories. Global statusline script is left untouched.
 
 ## How it works
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-08-07 (v2)
+
+### Zero-friction global setup
+- Install auto-creates `~/.claude/scripts/statusline.sh` if missing
+- Auto-appends `mod_taxi()` to existing statusline scripts
+- Auto-adds `statusLine` entry to `~/.claude/settings.json`
+- No manual steps — one command, everything works
+
+### Prereq check
+- Validates `jq` and `python3` upfront before touching any files
+- Exits with platform-specific install instructions if missing
+
+### Auto-start current session
+- If `CLAUDE_CODE_SESSION_ID` is set, triggers the hook immediately
+- Meter appears without restarting Claude Code
+
+### --uninstall flag
+- `install.sh --uninstall` delegates to `uninstall.sh` if available
+- Falls back to inline removal for curl-only users
+
+### Docs
+- `BILLING-FEATURES.md` — maps what taxi-meter does vs try-business billing engine
+- `demo.html` — animated Claude session showing eye candy vs business value
+- `install-flow.html` — interactive process map of every install step and error path
+
 ## 2026-08-07
 
 ### Web configurator
